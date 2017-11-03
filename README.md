@@ -11,10 +11,10 @@ The only parts you need are:
 - Diode 1N4148 (less than 5 cents, to reduce sensor voltage)
 - optional Zener-Diode Z2,7 (less than 5 cents, stabilization of sensor voltage)
 - optional Resistor 820 ohms or any other (less than 5 cents, for the Zener-Diode)
-- Melexis MLX90621 16x4 thermal Sensor (42€ with tax ans shipping  http://www.as-electronic.net)
+- Melexis MLX90621 16x4 thermal Sensor (42€ with tax and shipping  http://www.as-electronic.net)
 - optional a 0.96" I2C OLED ($2,50 on Alibaba, to show IP-Address and something more)
 
-connect the sensor to pins D1 and D2 (I2C Clock and Data),
+connect the sensor data pins to pins D1 and D2 (I2C Clock and Data),
 connect sensor GND to G,
 connect the unmarked side of 1N4148 to 3,3V and the marked side to sensor power supply.
 
@@ -46,7 +46,7 @@ for testing without sensor, the server will send some dummy data.
 its the first experimental version, not perfect, but working.
 
 
-by the way, it's a complete working webserver with SPIFFS(Flash) fileserver with web-based file-eplorer feature !!!
+by the way, it's a complete working webserver with SPIFFS(Flash) fileserver with web-based file-explorer feature !!!
 
 
 
