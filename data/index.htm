@@ -2,9 +2,9 @@
 <html>
 <body>
 
-<h1>Beispiel: window.setTimeout</h1>
+<h1>Termika Fotilo</h1>
 <main>
-	<p>Du hast nicht viel Zeit...</p>
+	
 </main>
 <div id="d1"><canvas id="mlxdata" width="16" height="4"></canvas></div><br>
 <div id="d2"><video id="video" width="320" height="240" autoplay></video></div><br>
@@ -33,15 +33,17 @@
   mlxcontext2 : null,
   opaque : 10,
   zoom : 0,
-  zoom_init : 40,
+  zoom_init : 36,
+  x_init : 10,
+  y_init : 10,
   data : 0,
-  tempmin : -25,
-  tempmax : 150,
+  tempmin : 0,
+  tempmax : 0,
   tempmin_init :10,
-  tempmax_init :85,
+  tempmax_init :75,
   tempspan : 0,
-  xpos : 170,
-  ypos : 170,
+  xpos : 300,
+  ypos : 190,
   span : 800,
   grad_blue : 0.1,
   grad_green : 0.4,
@@ -117,13 +119,24 @@
     tfo.xh.onreadystatechange = function(){
 	//document.getElementById("textcb1").innerHTML = "get values..."+tfo.xh.readyState+" >> "+tfo.xh.status;
 	if (this.readyState == 4 && this.status == 200) {
-	  document.getElementById("textcb2").innerHTML = "get values..."+tfo.xh.readyState+" >> "+tfo.xh.status;
+	  //document.getElementById("textcb2").innerHTML = "get values..."+tfo.xh.readyState+" >> "+tfo.xh.status;
 	  tfo.receive_count ++;
 	  tfo.receive = JSON.parse(tfo.xh.responseText);  // wandelt String in Jva Objekte
 	  tfo.receivedata = tfo.receive.thfo;
-	  document.getElementById("textcb3").innerHTML = "new values " + tfo.receive_count + " >> " +tfo.receivedata;    
+	  //document.getElementById("textcb4").innerHTML = "new values " + tfo.receive_count + " >> " +tfo.receivedata;    
 	  tfo.data=tfo.receivedata;
-	  document.getElementById("textcb4").innerHTML = tfo.data[0]+"#"+tfo.data[1]+"#"+tfo.data[2] +"#"+tfo.data[3]+"#"+tfo.data[4] +"#"+tfo.data[5]+"#"+tfo.data[6]+"#"+tfo.data[7];
+	  //document.getElementById("textcb3").innerHTML = tfo.clamp(tfo.data[0])+"#"+tfo.clamp(tfo.data[1])+"#"+tfo.clamp(tfo.data[2]) +"#"+tfo.clamp(tfo.data[3])+"#"+tfo.clamp(tfo.data[4]) +"#"+tfo.clamp(tfo.data[5])+"#"+tfo.clamp(tfo.data[6])+"#"+tfo.clamp(tfo.data[7]);
+      var message = "new values " + tfo.receive_count + "Data:Color >> ";
+	  for(var i = 0; i < 64; i++) {
+	    message += (tfo.clamp(tfo.data[i]));
+		message += ":";
+	    message += Math.round((tfo.clamp(tfo.data[i])-(tfo.tempmin*10)) * 99.9/ tfo.tempspan);
+		
+	    //message += tfo.mlxcontext2.getImageData((tfo.clamp(tfo.data[i]-tfo.tempmin*10))*100/tfo.tempspan,tfo.mlxcanvas2.height-1, 1, 1).data;
+		message += " , ";
+	  }
+	  document.getElementById("textcb5").innerHTML = message;   
+      tfo.copycolors();
 	  tfo.take_snapshot();
       } // if		
 	} // function onreadystatechange
@@ -176,7 +189,7 @@
 	}, // draw_text
 	
   clamp : function (value) {      // set minimum/maximum 
-       return value < tfo.tempmin*10 ? tfo.tempmin : value > tfo.tempmax*10 ? tfo.tempmax : value;
+       return value < tfo.tempmin*10 ? tfo.tempmin*10 : value > tfo.tempmax*10 ? tfo.tempmax*10 : value;
   }, // clamp
   
   take_snapshot : function () {
@@ -208,9 +221,12 @@
   copycolors :  function() {
     var color;
     for(var i = 0; i < 4; i++) for(var j = 0; j < 16; j++) { 
-	  color = tfo.mlxcontext2.getImageData(tfo.clamp(data[i*j])*100/tfo.tempspan,tfo.mlxcanvas2.height-1, 1, 1).data;
-	  tfo.mlxcontext.fillStyle = "rgb("+color[0]+","+color[1]+","+color[2]+")";
-      tfo.mlxcontext.fillRect(j,i,1,1);
+	  color = tfo.mlxcontext2.getImageData(Math.round((tfo.clamp(tfo.data[j+i*16])-(tfo.tempmin*10)) * 99.9 / tfo.tempspan),500, 1, 1);
+	  //tfo.mlxcontext.fillStyle = "rgb("+color[0]+","+color[1]+","+color[2]+")";
+      //tfo.mlxcontext.fillRect(j,i,1,1);
+	  //tfo.mlxcontext2.getImageData(200,400,10,10);
+	  //tfo.mlxcontext2.putImageData(color, j+480, i+100);
+	  tfo.mlxcontext.putImageData(color, 15-j, i);
       } // for
   }, // copycolors
   
@@ -218,7 +234,9 @@
     tfo.tempspan = tfo.tempmax-tfo.tempmin;  
 	tfo.mlxcontext2.fillStyle = tfo.cyan;
 	tfo.mlxcontext2.fillRect(0, 0, tfo.mlxcanvas2.width, tfo.mlxcanvas2.height-20);
-	tfo.copycolors();  
+	tfo.copycolors(); 
+    var imgdata = tfo.mlxcontext2.getImageData(600,500,1,1);
+    tfo.mlxcontext2.putImageData(imgdata, 100, 490);	
     tfo.drawframe();
 	   
 	   
@@ -229,6 +247,8 @@
     tfo.tempmin = tfo.tempmin_init;
 	tfo.tempmax = tfo.tempmax_init;
 	tfo.zoom = tfo.zoom_init;
+	//tfo.xpos += x_init;
+	//tfo.ypos += y_init;
 	tfo.mlxcanvas = document.getElementById('mlxdata');
     if(tfo.mlxcanvas && tfo.mlxcanvas.getContext) {
       tfo.mlxcontext = tfo.mlxcanvas.getContext('2d');
