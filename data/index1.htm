@@ -1,0 +1,258 @@
+<!-- 
+  FSWebServer - Example Index Page
+  Copyright (c) 2015 Hristo Gochkov. All rights reserved.
+  This file is part of the ESP8266WebServer library for Arduino environment.
+ 
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <title>ESP Monitor</title>
+  <script type="text/javascript" src="graphs.js"></script>
+  <script type="text/javascript">
+    var heap,temp,digi,therm;
+    var reloadPeriod = 1000;
+    var running = false;
+    
+    function loadValues(){
+      if(!running) return;
+      var xh = new XMLHttpRequest();
+      xh.onreadystatechange = function(){
+	  document.getElementById("textcb2").innerHTML = "Header "+xh.getAllResponseHeaders();
+	  document.getElementById("textcb3").innerHTML = "Text "+xh.responseText;
+	  
+	  document.getElementById("textcb").innerHTML = "Status "+xh.status;
+        if (xh.readyState == 4){
+          if(xh.status == 200) {
+            var res = JSON.parse(xh.responseText);
+            heap.add(res.heap);
+            temp.add(res.analog);
+            digi.add(res.gpio);
+			therm=res.thfo;
+			//var thermarray = therm.split(",",64);
+			//document.getElementById("textcb5").innerHTML = thermarray[0];
+			document.getElementById("textcb4").innerHTML = "thfo "+therm;
+            if(running) setTimeout(loadValues, reloadPeriod);
+          } else running = false;
+        }
+      };
+      xh.open("GET", "/all", true);
+      xh.send(null);
+    };
+    
+    function run(){
+      if(!running){
+        running = true;
+        loadValues();
+      }
+    }
+    
+    function onBodyLoad(){
+      var refreshInput = document.getElementById("refresh-rate");
+      refreshInput.value = reloadPeriod;
+      refreshInput.onchange = function(e){
+        var value = parseInt(e.target.value);
+        reloadPeriod = (value > 0)?value:0;
+        e.target.value = reloadPeriod;
+      }
+      var stopButton = document.getElementById("stop-button");
+      stopButton.onclick = function(e){
+        running = false;
+      }
+      var startButton = document.getElementById("start-button");
+      startButton.onclick = function(e){
+        run();
+      }
+      
+      // Example with 10K thermistor
+      //function calcThermistor(v) {
+      //  var t = Math.log(((10230000 / v) - 10000));
+      //  t = (1/(0.001129148+(0.000234125*t)+(0.0000000876741*t*t*t)))-273.15;
+      //  return (t>120)?0:Math.round(t*10)/10;
+      //}
+      //temp = createGraph(document.getElementById("analog"), "Temperature", 100, 128, 10, 40, false, "cyan", calcThermistor);
+      
+      temp = createGraph(document.getElementById("analog"), "Analog Input", 100, 128, 0, 1023, false, "cyan");
+      heap = createGraph(document.getElementById("heap"), "Current Heap", 100, 125, 0, 30000, true, "orange");
+      digi = createDigiGraph(document.getElementById("digital"), "GPIO", 100, 146, [0, 4, 5, 16], "gold");
+      run();
+    }
+  </script>
+  
+  <script>
+var tf = {  // class thermica fotila
+  canvas   : null,  // Canvas Element
+  ctx      : null,  // 2D-Grafikkontext vom Canvas
+  r1 : 800,   // Werte fÃ¼r Farbskala
+  r2 : 400,
+  g1 : 800,
+  g2 : 400,
+  b1 : 500,
+  b2 : 250,
+  r : 0,
+  g : 0,
+  b : 0,
+
+rectcolor3 : [77,79,83,68,68,80,71,65,65,64,62,57,52,62,56,50,83,88,85,83,78,80,80,81,73,79,79,72,69,74,72,60,88,84,87,84,79,86,83,79,79,82,84,71,79,76,74,71,81,79,82,73,74,83,76,72,65,74,78,81,75,78,72,73,0],
+  interpol_value1 : 0,
+  interpol_value2 : 0,
+  tempmin :9,
+  tempmax :86,
+  tempmin_init :10,
+  tempmax_init :85,
+  tempspan : 0,
+  counter  : 0,    // counter
+   canvas_color : "#503F10",
+  rectwidth : 29,
+  rectheight : 29,
+  rectscale : 2,
+  rectspace : 2,
+  imagepos : 280,
+  barpos_values : [-20,0,20,40,60,80,100,120], 
+  
+  cbimg: function () {
+	tf.ctx.fillStyle = "#FFFFFF";	
+	tf.ctx.fillRect(930, 300, 60, 60);
+	tf.ctx.fillStyle = "#FF0800";
+	tf.ctx.fillText("test",300,tf.canvas.height-7);	 
+  },
+  
+  clamp: function (value) {      // set minimum/maximum 
+       return value < tf.tempmin ? tf.tempmin : value > tf.tempmax ? tf.tempmax : value;
+  }, // clamp
+  calc_rgb: function (temp) {  // calc rgb from 0...1000 (0,0 to 100,0%)
+    if (temp>1000) return;
+    tf.r= temp>=tf.r1 ? 255 :                                             temp>=tf.r2 ? Math.round(255 - 255*(tf.r1-temp)/(tf.r1-tf.r2)) : 0;
+    tf.g= temp>=tf.g1 ? Math.round(255 - 255*(temp-tf.g1)/(1000-tf.g1)) : temp>=tf.g2 ? 255 : Math.round(255 - 255*(tf.g2-temp)/tf.g2);
+    tf.b= temp>=tf.b1 ? 0 :                                               temp>=tf.b2 ? Math.round(255 - 255*(temp-tf.b2)/(tf.b1-tf.b2)) : 255;
+    tf.ctx.fillStyle = "rgb("+tf.r+","+tf.g+","+tf.b+")";
+  }, // calc_rgb
+  calc_percent: function (temp) {
+     return Math.round((tf.clamp(temp)-tf.tempmin)/ tf.tempspan * 1000);
+ }, // calc_percent
+  interpol: function (value1,value2) {
+   var x = (value1+value2)/2;  // save Value
+    tf.calc_rgb (x);
+    return x;
+  }, // interpol
+  init: function() {
+       var script = document.createElement("script");  
+       script.src = "script.js";  
+       document.head.appendChild(script);
+       tf.canvas = document.getElementById('canvascb2');
+       if(tf.canvas && tf.canvas.getContext) {
+          tf.ctx = tf.canvas.getContext('2d');
+          		  
+       tf.ctx.fillStyle = tf.canvas_color;
+       tf.ctx.fillRect(0, 0, tf.canvas.width, tf.canvas.height);
+       tf.ctx.font = "24px Arial";    
+       tf.tempspan = tf.tempmax-tf.tempmin; 
+       tf.ctx.fillStyle = "#000000";
+           //tf.animStart();  // Start
+       //tf.drawcolors();
+	   
+       }
+   },
+   drawcolors: function () {  
+   //tf.image.src = 'test.bmp';
+   
+  for(var i = 0; i < 1000; i++) {    // draw color bar
+    tf.calc_rgb(i);  // calc rgb from 0...1000 (0,0 to 100,0%)
+      tf.ctx.fillRect(i,tf.rectheight*4*tf.rectscale+10,1,10);
+  } // for
+tf.ctx.fillText(tf.tempmin,10,tf.imagepos-10);
+  tf.ctx.fillText(tf.tempmax,tf.canvas.width-50,tf.imagepos-10);  
+  tf.ctx.fillText("Span(100%): "+(tf.tempspan),0,tf.imagepos+230);
+  for(var i = 0; i < tf.barpos_values.length; i++) if ((tf.barpos_values[i]>tf.tempmin+8) && (tf.barpos_values[i]<tf.tempmax-20)) tf.ctx.fillText("'"+tf.barpos_values[i]+"Å¶:"+tf.calc_percent(tf.barpos_values[i])/10+"%",tf.calc_percent(tf.barpos_values[i]),tf.imagepos-10);
+  tf.ctx.fillText(tf.calc_percent(20)/10,200,tf.imagepos+230);
+  for(var i = 0; i < 4; i++) for(var j = 0; j < 16; j++) {  // Draw original pixels
+    tf.calc_rgb(tf.calc_percent(tf.rectcolor3[j+i*16]));  // calc rgb from 0...1000 (0,0 to 100,0%)
+    tf.ctx.fillRect(j*(tf.rectwidth*tf.rectscale+tf.rectspace),i*(tf.rectwidth*tf.rectscale+tf.rectspace),tf.rectwidth*tf.rectscale,tf.rectheight*tf.rectscale);
+    tf.ctx.fillRect(j*(2*tf.rectwidth+tf.rectspace),i*(2*tf.rectheight+tf.rectspace)+tf.imagepos,tf.rectwidth,tf.rectheight);  // draw real pixel in interpoled picture
+    tf.ctx.fillStyle = "#000000";
+    tf.ctx.font = "18px Arial";
+    tf.ctx.fillText(tf.rectcolor3[j+i*16],j*(tf.rectwidth*tf.rectscale+tf.rectspace)+15,i*(tf.rectwidth*tf.rectscale+tf.rectspace)+55);
+    if (j<15) {
+     tf.interpol_value1 = tf.interpol(tf.calc_percent(tf.rectcolor3[j+i*16]),tf.calc_percent(tf.rectcolor3[j+1+i*16]));  // calc rgb from 0...1000 (0,0 to 100,0%)
+          tf.ctx.fillRect(j*(2*tf.rectwidth+tf.rectspace)+tf.rectwidth+1,i*(2*tf.rectheight+tf.rectspace)+tf.imagepos,tf.rectwidth,tf.rectheight);  // draw horizontal interpol pixels
+     }
+    if (i<3) {
+        tf.interpol_value2 = tf.interpol(tf.calc_percent(tf.rectcolor3[j+i*16]),tf.calc_percent(tf.rectcolor3[j+(i+1)*16]));  // calc rgb from 0...1000 (0,0 to 100,0%)
+        tf.ctx.fillRect(j*(2*tf.rectwidth+tf.rectspace),i*(2*tf.rectheight+tf.rectspace)+tf.rectheight+1+tf.imagepos,tf.rectwidth,tf.rectheight);  // draw horizontal + vertical interpol pixels
+            if (j<15) {
+      tf.interpol(tf.interpol_value1,tf.interpol_value2); // calc rgb from 0...1000 (0,0 to 100,0%)
+      tf.ctx.fillRect(j*(2*tf.rectwidth+tf.rectspace)+tf.rectwidth+1,i*(2*tf.rectheight+tf.rectspace)+tf.rectheight+1+tf.imagepos,tf.rectwidth,tf.rectheight);  // draw horizontal + vertical interpol pixels
+      }}}
+	  tf.cbimg();
+	  
+}, // drawcolors
+  button: function(value) {
+     if (value == 1) {tf.ctx.fillText("Button: "+ value,200,tf.imagepos+230); tf.tempmin--;}
+     if (value == 2) {tf.ctx.fillText("Button: "+ value,200,tf.imagepos+230); tf.tempmin++;}
+     if (value == 3) {tf.ctx.fillText("Button: "+ value,200,tf.imagepos+230); tf.tempmax--;}
+     if (value == 4) {tf.ctx.fillText("Button: "+ value,200,tf.imagepos+230); tf.tempmax++;}
+     if (value == 5) {tf.tempmin=tf.tempmin_init;tf.tempmax=tf.tempmax_init};
+     if (value == 6) {tf.ctx.fillText("Button: "+ value,200,tf.imagepos+230);}
+     if (value == 7) {tf.ctx.fillText("Button: "+ value,200,tf.imagepos+230);}
+     tf.ctx.fillStyle = tf.canvas_color;
+     tf.ctx.fillRect(0,tf.imagepos-27,998,19);
+     tf.ctx.fillRect(0,tf.canvas.height-27,500,20);
+     tf.tempspan = tf.tempmax-tf.tempmin; 
+     tf.ctx.font = "24px Arial";   
+     tf.drawcolors();
+	      
+  }
+} // class
+
+window.onload = tf.init();
+
+}
+
+
+
+
+</script>
+  
+</head>
+<body id="index" style="margin:0; padding:0;" onload="onBodyLoad()">
+<br>
+<div id="textcb"></div>
+<div id="textcb2"></div>
+<div id="textcb3"></div>
+<div id="textcb4"></div>
+<div id="textcb5"></div>
+<br>
+  <div id="controls" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; width: 362px; background-color: rgb(238, 238, 238);">
+    <label>Period (ms):</label>
+    <input type="number" id="refresh-rate"/>
+    <input type="button" id="start-button" value="Start"/>
+    <input type="button" id="stop-button" value="Stop"/>
+  </div>
+  <div id="heap"></div>
+  <div id="analog"></div>
+  <div id="digital"></div>
+  <br>
+<canvas id="canvascb2" width="1000" height="520">kein Java!</canvas>
+<p><form name="form" method="get" target="versteckt" ><button name="ACTION" value="button1" onclick="tf.button(1)">Mintemp -</button>
+<button name="ACTION" value="button2" onclick="tf.button(2)">Mintemp +</button>
+<button name="ACTION" value="button3" onclick="tf.button(3)">Maxtemp -</button>
+<button name="ACTION" value="button4" onclick="tf.button(4)">Maxtemp +</button>
+<button name="ACTION" value="button5" onclick="tf.button(5)"> Default </button>
+<button name="ACTION" value="button6" onclick="tf.button(6)"> Save </button>
+<button name="ACTION" value="button7" onclick="drawCanvas2()"> Refresh </button>
+</form>
+<iframe name="versteckt" href="about:blank" style="display:none"></iframe>
+</body>
+</html>

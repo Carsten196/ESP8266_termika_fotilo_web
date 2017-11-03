@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>Beispiel: window.setTimeout</h1>
+<main>
+	<p>Du hast nicht viel Zeit...</p>
+</main>
+<div id="d1"><canvas id="mlxdata" width="16" height="4"></canvas></div><br>
+<div id="d2"><video id="video" width="320" height="240" autoplay></video></div><br>
+<div id="d3"><canvas id="mlxgraf" width="1000" height="520">kein Java!</canvas></div>
+
+<script>
+	 	 
+  var tfo = {  // class thermica fotila
+  time_value : 2000,
+  timeout_value : 4000,
+  timer : 0,
+  timer_count : 0,
+  timeout_timer : 0,
+  running : false,
+  xh : 0, 
+  receive : 0,
+  receivedata : 0,
+  receive_count : 0,
+  mediaConfig : { video: true },
+  video : document.getElementById('video'),
+  canvas : null,
+  context : null,
+  mlxcanvas : null,
+  mlxcontext : null,
+  mlxcanvas2 : null,
+  mlxcontext2 : null,
+  opaque : 10,
+  zoom : 0,
+  zoom_init : 40,
+  data : 0,
+  tempmin : -25,
+  tempmax : 150,
+  tempmin_init :10,
+  tempmax_init :85,
+  tempspan : 0,
+  xpos : 170,
+  ypos : 170,
+  span : 800,
+  grad_blue : 0.1,
+  grad_green : 0.4,
+  grad_cyan : 0.2,
+  grad_yellow : 0.7,
+  red : "#FF0000",
+  green : "#00FF00",
+  blue : "#0000FF",
+  black : "#000000",
+  white : "#FFFFFF",
+  cyan : "#00FFFF",
+  yellow : "#FFFF00",
+  font1 : "24px Arial",  
+  font2 : "18px Arial",
+  font3 : "12px Arial",    
+  
+  get_camera : function(options, successCallback, failureCallback) {
+	//function getUserMedia(options, successCallback, failureCallback) {
+      var api = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+      //if (navigator.getUserMedia) document.getElementById("textcb8").innerHTML = "get camera success getUserMedia"; 
+	  //else if (navigator.webkitGetUserMedia) document.getElementById("textcb8").innerHTML = "get camera success webkit"; 
+	  //else if (navigator.mozGetUserMedia) document.getElementById("textcb8").innerHTML = "get camera success mozilla"; 
+	  //else if (navigator.msGetUserMedia) document.getElementById("textcb8").innerHTML = "get camera success ms";
+      if (api) document.getElementById("textcb8").innerHTML = "get camera success"; 
+	  else {document.getElementById("textcb8").innerHTML = "get camera fail: User Media API not supported."; return;}
+	  return api.bind(navigator)(options, successCallback, failureCallback);
+	}, // get_camera
+  
+   getvideo : function() {
+     return document.getElementById('videocb');
+   },
+   
+   errBack : function(e) {
+     document.getElementById("textcb").innerHTML = "video error: " + e;
+     console.log('An error has occurred!', e)
+            },
+   
+   getStream : function() {
+			// Put video listeners into place
+            if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+			  document.getElementById("textcb").innerHTML = "navigator.mediaDevices";
+              navigator.mediaDevices.getUserMedia(tfo.mediaConfig).then(function(stream) {
+                    tfo.video.src = window.URL.createObjectURL(stream);
+                    tfo.video.play();
+                });
+            }
+            /* Legacy code below! */
+            else if(navigator.getUserMedia) { // Standard
+			  document.getElementById("textcb").innerHTML = "getUserMedia";
+		      navigator.getUserMedia(tfo.mediaConfig, function(stream) {
+					video.src = stream;
+					video.play();
+				}, tfo.errBack());
+			} else if(navigator.webkitGetUserMedia) { // WebKit-prefixed
+			  document.getElementById("textcb").innerHTML = "webkit";
+				navigator.webkitGetUserMedia(tfo.mediaConfig, function(stream){
+					video.src = window.webkitURL.createObjectURL(stream);
+					video.play();
+				}, tfo.errBack());
+			} else if(navigator.mozGetUserMedia) { // Mozilla-prefixed
+			    document.getElementById("textcb").innerHTML = "mozilla";
+				navigator.mozGetUserMedia(tfo.mediaConfig, function(stream){
+					video.src = window.URL.createObjectURL(stream);
+					video.play();
+				}, tfo.errBack());
+			}
+  }, // getStream
+
+  
+      
+  http_get_values : function() {
+    //tfo.xh = new XMLHttpRequest();
+    tfo.xh.onreadystatechange = function(){
+	//document.getElementById("textcb1").innerHTML = "get values..."+tfo.xh.readyState+" >> "+tfo.xh.status;
+	if (this.readyState == 4 && this.status == 200) {
+	  document.getElementById("textcb2").innerHTML = "get values..."+tfo.xh.readyState+" >> "+tfo.xh.status;
+	  tfo.receive_count ++;
+	  tfo.receive = JSON.parse(tfo.xh.responseText);  // wandelt String in Jva Objekte
+	  tfo.receivedata = tfo.receive.thfo;
+	  document.getElementById("textcb3").innerHTML = "new values " + tfo.receive_count + " >> " +tfo.receivedata;    
+	  tfo.data=tfo.receivedata;
+	  document.getElementById("textcb4").innerHTML = tfo.data[0]+"#"+tfo.data[1]+"#"+tfo.data[2] +"#"+tfo.data[3]+"#"+tfo.data[4] +"#"+tfo.data[5]+"#"+tfo.data[6]+"#"+tfo.data[7];
+	  tfo.take_snapshot();
+      } // if		
+	} // function onreadystatechange
+  }, // http_get_values
+  
+  send_http_request : function() {
+    document.getElementById("textcb").innerHTML = "Send HTTP";
+	tfo.xh = new XMLHttpRequest();
+	tfo.xh.open("GET", "/all", true);  // send new request
+    tfo.xh.send(null);
+	tfo.http_get_values();
+    }, // send_http_request
+	
+  time_out : function() {
+    document.getElementById("textcb8").innerHTML = "timeout";
+	}, // time_out
+	
+  time_interval : function() {
+    tfo.timer_count++;	
+	document.getElementById("textcb7").innerHTML = "interval "+tfo.timer_count; 
+	tfo.send_http_request();
+	}, // time_interval
+	
+  start_time_interval : function() {
+    tfo.timer = setInterval("tfo.time_interval()", tfo.time_value);
+	document.getElementById("textcb8").innerHTML = "start timer"; 
+	tfo.running = true;
+	}, // start_time_interval
+	
+  stop_time_interval : function() {
+    clearInterval(tfo.timer);
+	document.getElementById("textcb8").innerHTML = "timer stopped"; 
+	tfo.running = false;
+	}, // stop_time_interval
+	
+  start_timeout : function() {
+	tfo.timeout_timer = setTimeout("tfo.time_out()",tfo.timeout_value);
+	document.getElementById("textcb8").innerHTML = "start timeout"; 
+	}, // start_timeout
+	
+  rect : function(xpos,ypos,width,height,color) {
+	tfo.context.fillStyle = color;
+	tfo.context.fillRect(xpos,ypos,width,height);
+	}, // draw_rect
+	
+  text : function(txt,xpos,ypos,color,font) {
+	tfo.mlxcontext2.fillStyle = color;
+	tfo.mlxcontext2.font = font;  
+	tfo.mlxcontext2.fillText(txt,xpos,ypos);
+	}, // draw_text
+	
+  clamp : function (value) {      // set minimum/maximum 
+       return value < tfo.tempmin*10 ? tfo.tempmin : value > tfo.tempmax*10 ? tfo.tempmax : value;
+  }, // clamp
+  
+  take_snapshot : function () {
+    //tfo.context.drawImage(tfo.video, 0, 0, 640, 480);
+	tfo.mlxcontext2.drawImage(tfo.video, 180, 0, 640, 480);
+	tfo.drawframe();
+  },  // take_snapshot
+  
+  drawframe : function() {
+     //tfo.mlxcontext.save();
+	 //tfo.mlxcontext.scale(zoom, zoom);
+	 tfo.mlxcontext2.globalAlpha = tfo.opaque/10;
+	 tfo.mlxcontext2.drawImage(tfo.mlxcanvas, tfo.xpos, tfo.ypos, 16*tfo.zoom, 4*tfo.zoom);
+	 tfo.mlxcontext2.globalAlpha = 1;
+	 //tfo.mlxcontext.restore();
+    tfo.mlxcontext2.fillStyle = tfo.cyan;
+    tfo.mlxcontext2.fillRect(0, 0, 150, 65);
+	tfo.mlxcontext2.fillStyle = tfo.yellow;
+	tfo.mlxcontext2.fillRect(0, tfo.mlxcanvas2.height-45, tfo.mlxcanvas2.width,25);	
+	tfo.mlxcontext2.fillStyle = tfo.black;
+	tfo.mlxcontext2.font = tfo.font2;   
+	tfo.mlxcontext2.fillText("span: "+tfo.tempspan,10,20);
+	tfo.mlxcontext2.fillText("zoom: "+tfo.zoom,10,40);	
+    tfo.mlxcontext2.fillText("transparency: "+tfo.opaque,10,60);
+	tfo.mlxcontext2.fillText(tfo.tempmin,20,tfo.mlxcanvas2.height-24);
+	tfo.mlxcontext2.fillText(tfo.tempmax,tfo.mlxcanvas2.width-40,tfo.mlxcanvas2.height-24);  
+  }, // drawframe
+  
+  copycolors :  function() {
+    var color;
+    for(var i = 0; i < 4; i++) for(var j = 0; j < 16; j++) { 
+	  color = tfo.mlxcontext2.getImageData(tfo.clamp(data[i*j])*100/tfo.tempspan,tfo.mlxcanvas2.height-1, 1, 1).data;
+	  tfo.mlxcontext.fillStyle = "rgb("+color[0]+","+color[1]+","+color[2]+")";
+      tfo.mlxcontext.fillRect(j,i,1,1);
+      } // for
+  }, // copycolors
+  
+  drawcanvas : function() {  
+    tfo.tempspan = tfo.tempmax-tfo.tempmin;  
+	tfo.mlxcontext2.fillStyle = tfo.cyan;
+	tfo.mlxcontext2.fillRect(0, 0, tfo.mlxcanvas2.width, tfo.mlxcanvas2.height-20);
+	tfo.copycolors();  
+    tfo.drawframe();
+	   
+	   
+  }, // drawcanvas
+  
+  init : function() {
+    data = [77,79,83,68,68,80,71,65,65,64,62,57,52,62,56,50,83,88,85,83,78,80,80,81,73,79,79,72,69,74,72,60,88,84,87,84,79,86,83,79,79,82,84,71,79,76,74,71,81,79,82,73,74,83,76,72,65,74,78,81,75,78,72,73,0];
+    tfo.tempmin = tfo.tempmin_init;
+	tfo.tempmax = tfo.tempmax_init;
+	tfo.zoom = tfo.zoom_init;
+	tfo.mlxcanvas = document.getElementById('mlxdata');
+    if(tfo.mlxcanvas && tfo.mlxcanvas.getContext) {
+      tfo.mlxcontext = tfo.mlxcanvas.getContext('2d');
+	  tfo.mlxcontext.fillStyle = tfo.green;
+      tfo.mlxcontext.fillRect(0, 0, tfo.mlxcanvas.width, tfo.mlxcanvas.height);   
+	 }
+	tfo.mlxcanvas2 = document.getElementById('mlxgraf');
+    if(tfo.mlxcanvas2 && tfo.mlxcanvas2.getContext) {
+      tfo.mlxcontext2 = tfo.mlxcanvas2.getContext('2d');
+	  tfo.mlxcontext2.fillStyle = tfo.cyan;
+      tfo.mlxcontext2.fillRect(0, 0, tfo.mlxcanvas2.width, tfo.mlxcanvas2.height);  
+      var grd=tfo.mlxcontext2.createLinearGradient(0,0,tfo.mlxcanvas2.width,20);
+      grd.addColorStop(0,"#2b00ff"); // take some red, but no violet
+	  grd.addColorStop(tfo.grad_blue,"#0000FF");
+	  grd.addColorStop(tfo.grad_cyan,"#00FFFF");
+	  grd.addColorStop(tfo.grad_green,"#00FF00");
+	  grd.addColorStop(tfo.grad_yellow,"#ffff00");
+	  grd.addColorStop(1,"#ff0000");
+	  tfo.mlxcontext2.fillStyle=grd;
+      tfo.mlxcontext2.fillRect(0,tfo.mlxcanvas2.height-20,tfo.mlxcanvas2.width,tfo.mlxcanvas2.height);	
+      tfo.drawcanvas();
+       
+	 }
+    
+   }, // init
+
+}; // class tfo
+
+  // Put event listeners into place
+		window.addEventListener("DOMContentLoaded", function() {		
+			// Trigger buttons
+		  document.getElementById('snap').addEventListener('click', function() {tfo.take_snapshot();});
+		  document.getElementById('button1').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Start";tfo.start_time_interval(); });
+		  document.getElementById('button2').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Stop ";tfo.stop_time_interval();  });
+		  document.getElementById('button3').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Start Timeout ";tfo.start_timeout(); });
+		  document.getElementById('button4').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "HTTP Request ";tfo.send_http_request();});
+		  document.getElementById('button5').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Test Camera";tfo.get_camera(); });
+		  document.getElementById('button6').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Get Video";tfo.getStream();});
+		  document.getElementById('button7').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmin--";tfo.tempmin--;tfo.drawcanvas();});
+		  document.getElementById('button8').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmin++";tfo.tempmin++;tfo.drawcanvas();});
+		  document.getElementById('button9').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmax--";tfo.tempmax--;tfo.drawcanvas();});
+		  document.getElementById('button10').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmax++";tfo.tempmax++;tfo.drawcanvas();});
+		  document.getElementById('button11').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "zoom--";tfo.zoom--;tfo.drawcanvas();});
+		  document.getElementById('button12').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "zoom++";tfo.zoom++;tfo.drawcanvas();});
+		  document.getElementById('button13').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "left";tfo.xpos--;tfo.drawcanvas();});
+		  document.getElementById('button14').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "right";tfo.xpos++;tfo.drawcanvas();});
+		  document.getElementById('button15').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "up";tfo.ypos--;tfo.drawcanvas();});
+		  document.getElementById('button16').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "down";tfo.ypos++;tfo.drawcanvas();});
+		  document.getElementById('button17').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "transparency+";tfo.opaque-- ;if(tfo.opaque<0)tfo.opaque=0;tfo.drawframe();});
+		  document.getElementById('button18').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "transparency-";tfo.opaque++;if(tfo.opaque>10)tfo.opaque=10;tfo.drawframe();});
+	      document.getElementById('button19').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Default";tfo.tempmin = tfo.tempmin_init; tfo.tempmax = tfo.tempmax_init; tfo.zoom = tfo.zoom_init;tfo.drawcanvas();});
+		  document.getElementById('button20').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Button";});
+
+
+    	tfo.init();
+	}, false);
+
+	var x, y;
+    tfo.canvas.onmousemove = function(e){
+    x = e.clientX-tfo.canvas.offsetLeft;
+    y = e.clientY-tfo.canvas.offsetTop;
+    kx.innerHTML = x;
+    ky.innerHTML = y;
+	document.getElementById("textcb3").innerHTML = "x "+x+" y "+y;
+	paint();
+    }
+    var active = false;
+    tfo.canvas.onmousedown = function(){ active = true; document.getElementById("textcb2").innerHTML = "Mouse x "+x+" y "+y;}
+    tfo.canvas.onmouseup = function(){ active = false; document.getElementById("textcb2").innerHTML = "x "+x+" y "+y;}
+ 
+ function paint(){
+    if(active){
+	  tfo.context.fillStyle = tfo.blue;
+        tfo.context.fillRect(x, y, 10, 10);
+    }
+}	
+    
+
+</script>
+
+  <br>
+  <button id="snap" >Snap Photo</button>
+  <button id="button1" >Start</button>
+  <button id="button2" >Stop</button>
+  <button id="button3" >Timeout</button>
+  <button id="button4" >HTTP Request</button>
+  <button id="button5" >Camera</button>
+  <button id="button6">get stream</button><br>
+  <button id="button7" >  mintemp - </button>
+  <button id="button8" >  mintemp + </button>
+  <button id="button9" >  maxtemp - </button>
+  <button id="button10" >  maxtemp + </button>
+  <button id="button11" >  zoom - </button>
+  <button id="button12" >  zoom + </button>
+  <button id="button13" > left </button>
+  <button id="button14" > right </button>
+  <button id="button15" > up </button>
+  <button id="button16" > down </button>
+  <button id="button17" > transparency+ </button>
+  <button id="button18" > transparency- </button>
+  <button id="button19" > Default </button>
+  <button id="button20" > Button </button>
+  <br>
+  Video: <div id="textcb"></div>
+  <div id="textcb1"></div>
+  <div id="textcb2"></div>
+  <div id="textcb3"></div>
+  <div id="textcb4"></div>
+  <div id="textcb5"></div>
+  <div id="textcb6"></div>
+  <div id="textcb7"></div>
+  <div id="textcb8"></div>
+  <div id="textcb9"></div>
+  <br>
+</body>
+</html>
+
