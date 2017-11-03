@@ -41,10 +41,12 @@ operating instructions:
 
 the other buttons don't care
 
+for testing without sensor, the server will send some dummy data.
+
 its the first experimental version, not perfect, but working.
 
 
-
+by the way, it's a complete working webserver with SPIFFS(Flash) fileserver. 
 
 
 
