@@ -16,7 +16,7 @@ The only parts you need are:
 
 connect the sensor to pins D1 and D2 (I2C Clock and Data),
 connect sensor GND to G,
-connect the marked side of 1N4148 to 3,3V and the other side to sensor power supply.
+connect the unmarked side of 1N4148 to 3,3V and the marked side to sensor power supply.
 
 optional connect Zener Diode in series with resistor marked side to sensor power supply, the other side to G,
 optional connect A0 to sensoe power supply, too for Voltage measurement,
