@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+<meta charset="utf-8">
 <body>
 
 <h1>Termika Fotilo</h1>
@@ -13,7 +14,8 @@
 <script>
 	 	 
   var tfo = {  // class thermica fotila
-  time_value : 2000,
+  debug : 7,
+  time_value : 500,
   timeout_value : 4000,
   timer : 0,
   timer_count : 0,
@@ -32,18 +34,15 @@
   mlxcanvas2 : null,
   mlxcontext2 : null,
   opaque : 10,
-  zoom : 0,
-  zoom_init : 36,
-  x_init : 10,
-  y_init : 10,
-  data : 0,
-  tempmin : 0,
-  tempmax : 0,
-  tempmin_init :10,
-  tempmax_init :75,
+  zoom : 62,
+  data : [103,136,129,68,78,86,88,86,84,97,119,85,89,128,120,116,97,119,121,115,113,127,146,125,118,115,119,110,121,135,142,126,109,119,118,128,112,180,205,227,172,123,127,108,118,142,133,140,130,123,128,122,148,219,232,227,239,135,127,97,97,126,117,126,0],
+  tempmin : 10,
+  tempmax : 75,
   tempspan : 0,
-  xpos : 300,
-  ypos : 190,
+  barpos_values : [-20,0,5,10,15,20,25,30,35,40,60,80,100,120,140,160,180,200], 
+  xpos : 200,
+  ypos : 140,
+  videoypos : 50,
   span : 800,
   grad_blue : 0.1,
   grad_green : 0.4,
@@ -61,15 +60,14 @@
   font3 : "12px Arial",    
   
   get_camera : function(options, successCallback, failureCallback) {
-	//function getUserMedia(options, successCallback, failureCallback) {
       var api = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-      //if (navigator.getUserMedia) document.getElementById("textcb8").innerHTML = "get camera success getUserMedia"; 
-	  //else if (navigator.webkitGetUserMedia) document.getElementById("textcb8").innerHTML = "get camera success webkit"; 
-	  //else if (navigator.mozGetUserMedia) document.getElementById("textcb8").innerHTML = "get camera success mozilla"; 
-	  //else if (navigator.msGetUserMedia) document.getElementById("textcb8").innerHTML = "get camera success ms";
-      if (api) document.getElementById("textcb8").innerHTML = "get camera success"; 
-	  else {document.getElementById("textcb8").innerHTML = "get camera fail: User Media API not supported."; return;}
-	  return api.bind(navigator)(options, successCallback, failureCallback);
+      if (navigator.getUserMedia) document.getElementById("label1").innerHTML = "get camera success getUserMedia"; 
+	  else if (navigator.webkitGetUserMedia) document.getElementById("label1").innerHTML = "get camera success webkit"; 
+	  else if (navigator.mozGetUserMedia) document.getElementById("label1").innerHTML = "get camera success mozilla"; 
+	  else if (navigator.msGetUserMedia) document.getElementById("label1").innerHTML = "get camera success ms";
+	  else {document.getElementById("label1").innerHTML = "get camera fail: User Media API not supported."; return;}
+	  //return api.bind(navigator)(options, successCallback, failureCallback);
+	  //document.getElementById("textcb1").innerHTML = api.bind(navigator)(options, successCallback, failureCallback);
 	}, // get_camera
   
    getvideo : function() {
@@ -77,7 +75,7 @@
    },
    
    errBack : function(e) {
-     document.getElementById("textcb").innerHTML = "video error: " + e;
+     document.getElementById("label1").innerHTML = "video error: " + e;
      console.log('An error has occurred!', e)
             },
    
@@ -123,19 +121,20 @@
 	  tfo.receive_count ++;
 	  tfo.receive = JSON.parse(tfo.xh.responseText);  // wandelt String in Jva Objekte
 	  tfo.receivedata = tfo.receive.thfo;
-	  //document.getElementById("textcb4").innerHTML = "new values " + tfo.receive_count + " >> " +tfo.receivedata;    
+	  document.getElementById("textcb4").innerHTML = "new values " + tfo.receive_count + " >> " +tfo.receivedata;    
 	  tfo.data=tfo.receivedata;
 	  //document.getElementById("textcb3").innerHTML = tfo.clamp(tfo.data[0])+"#"+tfo.clamp(tfo.data[1])+"#"+tfo.clamp(tfo.data[2]) +"#"+tfo.clamp(tfo.data[3])+"#"+tfo.clamp(tfo.data[4]) +"#"+tfo.clamp(tfo.data[5])+"#"+tfo.clamp(tfo.data[6])+"#"+tfo.clamp(tfo.data[7]);
-      var message = "new values " + tfo.receive_count + "Data:Color >> ";
-	  for(var i = 0; i < 64; i++) {
-	    message += (tfo.clamp(tfo.data[i]));
-		message += ":";
-	    message += Math.round((tfo.clamp(tfo.data[i])-(tfo.tempmin*10)) * 99.9/ tfo.tempspan);
-		
-	    //message += tfo.mlxcontext2.getImageData((tfo.clamp(tfo.data[i]-tfo.tempmin*10))*100/tfo.tempspan,tfo.mlxcanvas2.height-1, 1, 1).data;
-		message += " , ";
-	  }
-	  document.getElementById("textcb5").innerHTML = message;   
+      if (tfo.debug&2) {
+	    var message = "new values " + tfo.receive_count + "Data:Color >> ";
+	    for(var i = 0; i < 64; i++) {
+	      message += (tfo.clamp(tfo.data[i]));
+		  message += ":";
+	      message += Math.round((tfo.clamp(tfo.data[i])-(tfo.tempmin*10)) * 99.9/ tfo.tempspan);	
+	      //message += tfo.mlxcontext2.getImageData((tfo.clamp(tfo.data[i]-tfo.tempmin*10))*100/tfo.tempspan,tfo.mlxcanvas2.height-1, 1, 1).data;
+		  message += " , ";
+	    }
+	    document.getElementById("textcb5").innerHTML = message;  
+      }	  
       tfo.copycolors();
 	  tfo.take_snapshot();
       } // if		
@@ -143,7 +142,7 @@
   }, // http_get_values
   
   send_http_request : function() {
-    document.getElementById("textcb").innerHTML = "Send HTTP";
+    if (tfo.debug&1) document.getElementById("textcb1").innerHTML = "Send HTTP";
 	tfo.xh = new XMLHttpRequest();
 	tfo.xh.open("GET", "/all", true);  // send new request
     tfo.xh.send(null);
@@ -151,31 +150,83 @@
     }, // send_http_request
 	
   time_out : function() {
-    document.getElementById("textcb8").innerHTML = "timeout";
+    if (tfo.debug&1)document.getElementById("textcb").innerHTML = "timeout";
 	}, // time_out
 	
   time_interval : function() {
     tfo.timer_count++;	
-	document.getElementById("textcb7").innerHTML = "interval "+tfo.timer_count; 
+	if (tfo.debug&1)document.getElementById("textcb").innerHTML = "interval "+tfo.timer_count; 
 	tfo.send_http_request();
 	}, // time_interval
 	
   start_time_interval : function() {
     tfo.timer = setInterval("tfo.time_interval()", tfo.time_value);
-	document.getElementById("textcb8").innerHTML = "start timer"; 
+	if (tfo.debug&1)document.getElementById("label1").innerHTML = "start"; 
 	tfo.running = true;
 	}, // start_time_interval
 	
   stop_time_interval : function() {
     clearInterval(tfo.timer);
-	document.getElementById("textcb8").innerHTML = "timer stopped"; 
+	if (tfo.debug&1)document.getElementById("label1").innerHTML = "stop"; 
 	tfo.running = false;
 	}, // stop_time_interval
 	
   start_timeout : function() {
 	tfo.timeout_timer = setTimeout("tfo.time_out()",tfo.timeout_value);
-	document.getElementById("textcb8").innerHTML = "start timeout"; 
+	if (tfo.debug&1) document.getElementById("label1").innerHTML = "start timeout"; 
 	}, // start_timeout
+	
+  set_time : function(val) {
+	tfo.time_value = val > 0?val:0;
+	if (tfo.debug&1)document.getElementById("label1").innerHTML = "set new time: " + tfo.time_value; 
+	}, // set time
+	
+  set_xpos : function(val) {
+	tfo.xpos = val > 0?val:0;
+	document.getElementById("xpos").value = "" + tfo.xpos;
+	tfo.drawcanvas();
+	if (tfo.debug&1) document.getElementById("label1").innerHTML = "set xpos: " + tfo.xpos; 
+	}, // set xpos
+	
+  set_ypos : function(val) {
+	tfo.ypos = val > 0?val:0;
+	document.getElementById("ypos").value = "" + tfo.ypos;
+	tfo.drawcanvas(); 
+	if (tfo.debug&1) document.getElementById("label1").innerHTML = "set ypos: " + tfo.ypos; 
+	}, // set ypos
+	
+  set_zoom : function(val) {
+	tfo.zoom = val > 0?val:0;
+	document.getElementById("zoom").value = "" + tfo.zoom;
+	tfo.drawcanvas();
+	drawinfotext();
+	if (tfo.debug&1) document.getElementById("label1").innerHTML = "set zoom: " + tfo.zoom; 
+	}, // set zoom
+	
+  set_videoypos : function(val) {
+	tfo.videoypos = val > 0?val:0;
+	document.getElementById("videoypos").value = "" + tfo.videoypos;
+	//tfo.drawcanvas(); 
+	if (tfo.debug&1) document.getElementById("label1").innerHTML = "set video ypos: " + tfo.videoypos; 
+	}, // set ypos
+	
+  set_mintemp : function(val) {
+	tfo.tempmin = val;
+	document.getElementById("mintemp").value = "" + tfo.tempmin;
+	tfo.drawcanvas(); 
+	if (tfo.debug&1) document.getElementById("label1").innerHTML = "set tempmin: " + tfo.tempmin;
+    tfo.drawbar();	
+	tfo.drawinfotext();
+	}, // set mintemp
+  
+  set_maxtemp : function(val) {
+	tfo.tempmax = val;
+	document.getElementById("maxtemp").value = "" + tfo.tempmax;
+	tfo.drawcanvas(); 
+	if (tfo.debug&1) document.getElementById("label1").innerHTML = "set tempmax: " + tfo.tempmax;
+    tfo.drawbar();	
+	tfo.drawinfotext();
+	}, // set maxtemp
 	
   rect : function(xpos,ypos,width,height,color) {
 	tfo.context.fillStyle = color;
@@ -193,9 +244,10 @@
   }, // clamp
   
   take_snapshot : function () {
-    //tfo.context.drawImage(tfo.video, 0, 0, 640, 480);
-	tfo.mlxcontext2.drawImage(tfo.video, 180, 0, 640, 480);
+	tfo.mlxcontext2.drawImage(tfo.video,180, 0, 320, 240);
+    tfo.mlxcontext2.drawImage(tfo.mlxcanvas2,180, tfo.videoypos, 320, Math.round(tfo.videoypos*2.0833),0,0,1000,480);
 	tfo.drawframe();
+	tfo.drawinfotext();
   },  // take_snapshot
   
   drawframe : function() {
@@ -205,50 +257,77 @@
 	 tfo.mlxcontext2.drawImage(tfo.mlxcanvas, tfo.xpos, tfo.ypos, 16*tfo.zoom, 4*tfo.zoom);
 	 tfo.mlxcontext2.globalAlpha = 1;
 	 //tfo.mlxcontext.restore();
-    tfo.mlxcontext2.fillStyle = tfo.cyan;
-    tfo.mlxcontext2.fillRect(0, 0, 150, 65);
-	tfo.mlxcontext2.fillStyle = tfo.yellow;
-	tfo.mlxcontext2.fillRect(0, tfo.mlxcanvas2.height-45, tfo.mlxcanvas2.width,25);	
-	tfo.mlxcontext2.fillStyle = tfo.black;
-	tfo.mlxcontext2.font = tfo.font2;   
-	tfo.mlxcontext2.fillText("span: "+tfo.tempspan,10,20);
-	tfo.mlxcontext2.fillText("zoom: "+tfo.zoom,10,40);	
-    tfo.mlxcontext2.fillText("transparency: "+tfo.opaque,10,60);
-	tfo.mlxcontext2.fillText(tfo.tempmin,20,tfo.mlxcanvas2.height-24);
-	tfo.mlxcontext2.fillText(tfo.tempmax,tfo.mlxcanvas2.width-40,tfo.mlxcanvas2.height-24);  
+    //tfo.mlxcontext2.fillStyle = tfo.cyan;
+    //tfo.mlxcontext2.fillRect(0, 0, 150, 65);
+	 
   }, // drawframe
   
   copycolors :  function() {
     var color;
     for(var i = 0; i < 4; i++) for(var j = 0; j < 16; j++) { 
 	  color = tfo.mlxcontext2.getImageData(Math.round((tfo.clamp(tfo.data[j+i*16])-(tfo.tempmin*10)) * 99.9 / tfo.tempspan),500, 1, 1);
-	  //tfo.mlxcontext.fillStyle = "rgb("+color[0]+","+color[1]+","+color[2]+")";
-      //tfo.mlxcontext.fillRect(j,i,1,1);
-	  //tfo.mlxcontext2.getImageData(200,400,10,10);
-	  //tfo.mlxcontext2.putImageData(color, j+480, i+100);
 	  tfo.mlxcontext.putImageData(color, 15-j, i);
       } // for
   }, // copycolors
   
+  drawbar : function() { 
+    tfo.mlxcontext2.fillStyle = tfo.yellow;
+	tfo.mlxcontext2.fillRect(0, tfo.mlxcanvas2.height-40, tfo.mlxcanvas2.width,20);
+    tfo.mlxcontext2.fillStyle = tfo.black;
+	tfo.mlxcontext2.font = tfo.font2; 
+    tfo.mlxcontext2.fillText(tfo.tempmin+ "°" ,5,tfo.mlxcanvas2.height-24);
+	tfo.mlxcontext2.fillText(tfo.tempmax+ "°" ,tfo.mlxcanvas2.width-40,tfo.mlxcanvas2.height-24); 
+	var pos;
+    for(var i = 0; i < tfo.barpos_values.length; i++) if ((tfo.barpos_values[i]>tfo.tempmin+8) && (tfo.barpos_values[i]<tfo.tempmax-20)) {
+	  pos=Math.round((tfo.barpos_values[i]-tfo.tempmin)* 999 / tfo.tempspan);
+	  tfo.mlxcontext2.fillText(tfo.barpos_values[i]+ "°",pos+3,tfo.mlxcanvas2.height-24);
+	  tfo.mlxcontext2.fillRect(pos,tfo.mlxcanvas2.height-40,2,20);
+	  }
+  }, // drawbar
+  drawinfotext : function() { 
+    tfo.mlxcontext2.fillStyle = tfo.green;
+	tfo.mlxcontext2.font = tfo.font2;   
+	tfo.mlxcontext2.fillText("span: "+tfo.tempspan,10,20);
+	tfo.mlxcontext2.fillText("zoom: "+tfo.zoom,10,40);	
+    tfo.mlxcontext2.fillText("transparency: "+tfo.opaque,10,60); 
+  }, // drawcolorbar
+  
+  drawcolorbar : function() { 
+    var grd=tfo.mlxcontext2.createLinearGradient(0,0,tfo.mlxcanvas2.width,20);
+    grd.addColorStop(0,"#2b00ff"); // take some red, but no violet
+	grd.addColorStop(tfo.grad_blue,"#0000FF");
+	grd.addColorStop(tfo.grad_cyan,"#00FFFF");
+	grd.addColorStop(tfo.grad_green,"#00FF00");
+	grd.addColorStop(tfo.grad_yellow,"#ffff00");
+	grd.addColorStop(1,"#ff0000");
+	tfo.mlxcontext2.fillStyle=grd;
+    tfo.mlxcontext2.fillRect(0,tfo.mlxcanvas2.height-20,tfo.mlxcanvas2.width,tfo.mlxcanvas2.height);	
+  }, // drawcolorbar
+  
   drawcanvas : function() {  
     tfo.tempspan = tfo.tempmax-tfo.tempmin;  
 	tfo.mlxcontext2.fillStyle = tfo.cyan;
-	tfo.mlxcontext2.fillRect(0, 0, tfo.mlxcanvas2.width, tfo.mlxcanvas2.height-20);
+	tfo.mlxcontext2.fillRect(0, 0, tfo.mlxcanvas2.width, tfo.mlxcanvas2.height-40);
 	tfo.copycolors(); 
     var imgdata = tfo.mlxcontext2.getImageData(600,500,1,1);
     tfo.mlxcontext2.putImageData(imgdata, 100, 490);	
     tfo.drawframe();
-	   
-	   
+    var videoframe = document.getElementById('video');	
+    if(videoframe && videoframe.getContext) {
+	  videocontex = videoframe.getContext('2d');
+	  videocontex.fillStyle = tfo.cyan;
+      videocontex.fillRect(0, 0, 100, 100); 
+    }		
   }, // drawcanvas
   
   init : function() {
-    data = [77,79,83,68,68,80,71,65,65,64,62,57,52,62,56,50,83,88,85,83,78,80,80,81,73,79,79,72,69,74,72,60,88,84,87,84,79,86,83,79,79,82,84,71,79,76,74,71,81,79,82,73,74,83,76,72,65,74,78,81,75,78,72,73,0];
-    tfo.tempmin = tfo.tempmin_init;
-	tfo.tempmax = tfo.tempmax_init;
-	tfo.zoom = tfo.zoom_init;
-	//tfo.xpos += x_init;
-	//tfo.ypos += y_init;
+	document.getElementById("refresh-rate").value = tfo.time_value;
+	document.getElementById("xpos").value = tfo.xpos;
+	document.getElementById("ypos").value = tfo.ypos;
+	document.getElementById("zoom").value = tfo.zoom;
+	document.getElementById("videoypos").value = tfo.videoypos;
+	document.getElementById("mintemp").value = tfo.tempmin;
+	document.getElementById("maxtemp").value = tfo.tempmax;
 	tfo.mlxcanvas = document.getElementById('mlxdata');
     if(tfo.mlxcanvas && tfo.mlxcanvas.getContext) {
       tfo.mlxcontext = tfo.mlxcanvas.getContext('2d');
@@ -259,19 +338,14 @@
     if(tfo.mlxcanvas2 && tfo.mlxcanvas2.getContext) {
       tfo.mlxcontext2 = tfo.mlxcanvas2.getContext('2d');
 	  tfo.mlxcontext2.fillStyle = tfo.cyan;
-      tfo.mlxcontext2.fillRect(0, 0, tfo.mlxcanvas2.width, tfo.mlxcanvas2.height);  
-      var grd=tfo.mlxcontext2.createLinearGradient(0,0,tfo.mlxcanvas2.width,20);
-      grd.addColorStop(0,"#2b00ff"); // take some red, but no violet
-	  grd.addColorStop(tfo.grad_blue,"#0000FF");
-	  grd.addColorStop(tfo.grad_cyan,"#00FFFF");
-	  grd.addColorStop(tfo.grad_green,"#00FF00");
-	  grd.addColorStop(tfo.grad_yellow,"#ffff00");
-	  grd.addColorStop(1,"#ff0000");
-	  tfo.mlxcontext2.fillStyle=grd;
-      tfo.mlxcontext2.fillRect(0,tfo.mlxcanvas2.height-20,tfo.mlxcanvas2.width,tfo.mlxcanvas2.height);	
-      tfo.drawcanvas();
-       
-	 }
+      tfo.mlxcontext2.fillRect(0, 0, tfo.mlxcanvas2.width, tfo.mlxcanvas2.height); 
+      tfo.drawcolorbar();        
+	  tfo.drawcanvas(); 
+      tfo.drawbar();
+	  tfo.copycolors();
+      tfo.drawframe();
+	  tfo.drawinfotext();
+	 } 
     
    }, // init
 
@@ -287,21 +361,20 @@
 		  document.getElementById('button4').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "HTTP Request ";tfo.send_http_request();});
 		  document.getElementById('button5').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Test Camera";tfo.get_camera(); });
 		  document.getElementById('button6').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Get Video";tfo.getStream();});
-		  document.getElementById('button7').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmin--";tfo.tempmin--;tfo.drawcanvas();});
-		  document.getElementById('button8').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmin++";tfo.tempmin++;tfo.drawcanvas();});
-		  document.getElementById('button9').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmax--";tfo.tempmax--;tfo.drawcanvas();});
-		  document.getElementById('button10').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmax++";tfo.tempmax++;tfo.drawcanvas();});
-		  document.getElementById('button11').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "zoom--";tfo.zoom--;tfo.drawcanvas();});
-		  document.getElementById('button12').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "zoom++";tfo.zoom++;tfo.drawcanvas();});
-		  document.getElementById('button13').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "left";tfo.xpos--;tfo.drawcanvas();});
-		  document.getElementById('button14').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "right";tfo.xpos++;tfo.drawcanvas();});
-		  document.getElementById('button15').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "up";tfo.ypos--;tfo.drawcanvas();});
-		  document.getElementById('button16').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "down";tfo.ypos++;tfo.drawcanvas();});
+		  document.getElementById('button7').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmin--";tfo.set_mintemp(--tfo.tempmin);});
+		  document.getElementById('button8').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmin++";tfo.set_mintemp(++tfo.tempmin);});
+		  document.getElementById('button9').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmax--";tfo.set_maxtemp(--tfo.tempmax);});
+		  document.getElementById('button10').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "tempmax++";tfo.set_maxtemp(++tfo.tempmax);});
+		  document.getElementById('button11').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "zoom--";tfo.set_zoom(--tfo.zoom);});
+		  document.getElementById('button12').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "zoom++";tfo.set_zoom(++tfo.zoom);});
+		  document.getElementById('button13').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "left";tfo.set_xpos(--tfo.xpos);});
+		  document.getElementById('button14').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "right";tfo.set_xpos(++tfo.xpos);});
+		  document.getElementById('button15').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "up";tfo.set_ypos(--tfo.ypos);});
+		  document.getElementById('button16').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "down";tfo.set_ypos(++tfo.ypos);});
 		  document.getElementById('button17').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "transparency+";tfo.opaque-- ;if(tfo.opaque<0)tfo.opaque=0;tfo.drawframe();});
 		  document.getElementById('button18').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "transparency-";tfo.opaque++;if(tfo.opaque>10)tfo.opaque=10;tfo.drawframe();});
 	      document.getElementById('button19').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Default";tfo.tempmin = tfo.tempmin_init; tfo.tempmax = tfo.tempmax_init; tfo.zoom = tfo.zoom_init;tfo.drawcanvas();});
-		  document.getElementById('button20').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Button";});
-
+		  document.getElementById('button20').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "show data";if (tfo.debug & 2) tfo.debug &=0xFD; else tfo.debug |=2;document.getElementById("textcb5").innerHTML = ""; });
 
     	tfo.init();
 	}, false);
@@ -319,39 +392,46 @@
     tfo.canvas.onmousedown = function(){ active = true; document.getElementById("textcb2").innerHTML = "Mouse x "+x+" y "+y;}
     tfo.canvas.onmouseup = function(){ active = false; document.getElementById("textcb2").innerHTML = "x "+x+" y "+y;}
  
- function paint(){
-    if(active){
-	  tfo.context.fillStyle = tfo.blue;
-        tfo.context.fillRect(x, y, 10, 10);
-    }
-}	
-    
-
 </script>
-
-  <br>
-  <button id="snap" >Snap Photo</button>
-  <button id="button1" >Start</button>
-  <button id="button2" >Stop</button>
-  <button id="button3" >Timeout</button>
-  <button id="button4" >HTTP Request</button>
-  <button id="button5" >Camera</button>
-  <button id="button6">get stream</button><br>
-  <button id="button7" >  mintemp - </button>
-  <button id="button8" >  mintemp + </button>
-  <button id="button9" >  maxtemp - </button>
-  <button id="button10" >  maxtemp + </button>
-  <button id="button11" >  zoom - </button>
-  <button id="button12" >  zoom + </button>
-  <button id="button13" > left </button>
-  <button id="button14" > right </button>
-  <button id="button15" > up </button>
-  <button id="button16" > down </button>
-  <button id="button17" > transparency+ </button>
-  <button id="button18" > transparency- </button>
+  <label id="label1" ></label>
+  <br> 
+  <div id="controls1" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; width: 1000px; background-color: rgb(238, 238, 238);">
+    <button id="button1" >Start</button>
+    <button id="button2" >Stop</button> 
+	<button id="button6">get stream</button>
+	<button id="button7" >  mintemp - </button>
+	<input type="number" id="mintemp" style="width: 60px;" onchange="tfo.set_mintemp(this.value)">
+    <button id="button8" >  mintemp + </button>
+    <button id="button9" >  maxtemp - </button>
+	<input type="number" id="maxtemp" style="width: 60px;" onchange="tfo.set_maxtemp(this.value)">
+    <button id="button10" >  maxtemp + </button>
+    <button id="button17" > transparency+ </button>
+    <button id="button18" > transparency- </button>
+	 <button id="button5" >Test Camera</button>
+  </div>
+  <div id="controls" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; width: 1000px; background-color: rgb(238, 238, 238);">
+    <label>Period (ms):</label>
+    <input type="number" id="refresh-rate" style="width: 60px;" onchange="tfo.set_time(this.value)">
+	<button id="button13" style="width: 50px;"> left </button>
+	<label>x:</label>
+	<input type="number" id="xpos" style="width: 60px;" onchange="tfo.set_xpos(this.value)">
+    <button id="button14" style="width: 50px;"> right </button>
+	<button id="button15" style="width: 50px;"> up </button>
+	<label>y:</label>
+	<input type="number" id="ypos" style="width: 60px;" onchange="tfo.set_ypos(this.value)">
+    <button id="button16" style="width: 50px;"> down </button>
+	<button id="button11" >  zoom - </button>
+	<label>zoom:</label>
+	<input type="number" id="zoom" style="width: 60px;" onchange="tfo.set_zoom(this.value)">
+    <button id="button12" >  zoom + </button>
+	<label>move Video</label>
+	<input type="number" id="videoypos" style="width: 60px;" onchange="tfo.set_videoypos(this.value)">
+  </div>
   <button id="button19" > Default </button>
-  <button id="button20" > Button </button>
-  <br>
+  <button id="button4" >HTTP Request</button>
+  <button id="snap" >Snap Photo</button>
+  <button id="button3" >Timeout</button>
+  <button id="button20" > show data </button>
   Video: <div id="textcb"></div>
   <div id="textcb1"></div>
   <div id="textcb2"></div>
@@ -362,6 +442,7 @@
   <div id="textcb7"></div>
   <div id="textcb8"></div>
   <div id="textcb9"></div>
+  
   <br>
 </body>
 </html>
