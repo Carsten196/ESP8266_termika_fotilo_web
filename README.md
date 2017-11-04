@@ -1,6 +1,8 @@
 # ESP8266_termika_fotilo_web
 Web Version in Javascript with HTML5 Canvas, with support of Camera overlay to to thermal image
 
+<img src=/data/img1.jpg></img>
+
 based on Example FSBrowser by Hristo Gochkov and Arduino Termika Fotilo.
 I created a version without the 1,8" TFT. Instead it uses a Web Browser. So it should work with all computers, smartphones, tablets without installing any app.
 But it will not work completely on iPhone devices, cause ther is no support for getUserMedia() to get access to the camera.
