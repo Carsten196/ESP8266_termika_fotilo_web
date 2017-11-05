@@ -7,10 +7,43 @@
 <main>
 	
 </main>
-<div id="d1"><canvas id="mlxdata" width="16" height="4"></canvas></div><br>
-<div id="d2"><video id="video" width="320" height="240" autoplay></video></div><br>
-<div id="d3"><canvas id="mlxgraf" width="1000" height="520">kein Java!</canvas></div>
 
+
+<div id="d3"><canvas id="mlxgraf" width="1000" height="520">kein Java!</canvas></div>
+<div id="controls1" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; height: 40px; width: 1000px; background-color: rgb(238, 238, 238);">
+    <button id="button1" style="height: 36px;">Start</button>
+    <button id="button2" style="height: 36px;">Stop</button> 
+	<button id="button6" style="height: 36px;">get stream</button>
+	<button id="button7" style="height: 36px;">  mintemp - </button>
+	<input type="number" id="mintemp" style="width: 60px;" onchange="tfo.set_mintemp(this.value)">
+    <button id="button8" style="height: 36px;">  mintemp + </button>
+    <button id="button9" style="height: 36px;">  maxtemp - </button>
+	<input type="number" id="maxtemp" style="width: 60px;" onchange="tfo.set_maxtemp(this.value)">
+    <button id="button10" style="height: 36px;">  maxtemp + </button>
+    <button id="button17" style="height: 36px;"> transparency+ </button>
+    <button id="button18" style="height: 36px;"> transparency- </button>
+	 <button id="button5" style="height: 36px;">Test Camera</button>
+  </div>
+  <div id="controls" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; height: 40px; width: 1000px; background-color: rgb(238, 238, 238);">
+    <label>Period (ms):</label>
+    <input type="number" id="refresh-rate" style="width: 60px;" onchange="tfo.set_time(this.value)">
+	<button id="button13" style="width: 50px; height: 36px;"> left </button>
+	<label>x:</label>
+	<input type="number" id="xpos" style="width: 60px;" onchange="tfo.set_xpos(this.value)">
+    <button id="button14" style="width: 50px; height: 36px;"> right </button>
+	<button id="button15" style="width: 50px; height: 36px;"> up </button>
+	<label>y:</label>
+	<input type="number" id="ypos" style="width: 60px;" onchange="tfo.set_ypos(this.value)">
+    <button id="button16" style="width: 50px; height: 36px;"> down </button>
+	<button id="button11" style="width: 50px; height: 36px;">  zoom - </button>
+	<label>zoom:</label>
+	<input type="number" id="zoom" style="width: 60px;" onchange="tfo.set_zoom(this.value)">
+    <button id="button12" style="width: 50px; height: 36px;">  zoom + </button>
+	<label>move Video</label>
+	<input type="number" id="videoypos" style="width: 60px;" onchange="tfo.set_videoypos(this.value)">
+  </div>  
+  <div id="d2"><video id="video" width="320" height="240" autoplay></video></div><br>
+  <div id="d1"><canvas id="mlxdata" width="16" height="4"></canvas></div><br>
 <script>
 	 	 
   var tfo = {  // class thermica fotila
@@ -113,7 +146,6 @@
   
       
   http_get_values : function() {
-    //tfo.xh = new XMLHttpRequest();
     tfo.xh.onreadystatechange = function(){
 	//document.getElementById("textcb1").innerHTML = "get values..."+tfo.xh.readyState+" >> "+tfo.xh.status;
 	if (this.readyState == 4 && this.status == 200) {
@@ -122,17 +154,17 @@
 	  tfo.receive = JSON.parse(tfo.xh.responseText);  // wandelt String in Jva Objekte
 	  tfo.receivedata = tfo.receive.thfo;
 	  document.getElementById("textcb4").innerHTML = "new values " + tfo.receive_count + " >> " +tfo.receivedata;    
-	  tfo.data=tfo.receivedata;
-	  //document.getElementById("textcb3").innerHTML = tfo.clamp(tfo.data[0])+"#"+tfo.clamp(tfo.data[1])+"#"+tfo.clamp(tfo.data[2]) +"#"+tfo.clamp(tfo.data[3])+"#"+tfo.clamp(tfo.data[4]) +"#"+tfo.clamp(tfo.data[5])+"#"+tfo.clamp(tfo.data[6])+"#"+tfo.clamp(tfo.data[7]);
+	  tfo.data=tfo.receivedata;	  
       if (tfo.debug&2) {
 	    var message = "new values " + tfo.receive_count + "Data:Color >> ";
 	    for(var i = 0; i < 64; i++) {
 	      message += (tfo.clamp(tfo.data[i]));
 		  message += ":";
 	      message += Math.round((tfo.clamp(tfo.data[i])-(tfo.tempmin*10)) * 99.9/ tfo.tempspan);	
-	      //message += tfo.mlxcontext2.getImageData((tfo.clamp(tfo.data[i]-tfo.tempmin*10))*100/tfo.tempspan,tfo.mlxcanvas2.height-1, 1, 1).data;
 		  message += " , ";
 	    }
+		document.getElementById("textcb2").innerHTML = "Header "+this.getAllResponseHeaders();
+		document.getElementById("textcb3").innerHTML = "Text "+this.responseText;
 	    document.getElementById("textcb5").innerHTML = message;  
       }	  
       tfo.copycolors();
@@ -149,13 +181,29 @@
 	tfo.http_get_values();
     }, // send_http_request
 	
+  send_http_request_values : function() {
+    if (tfo.debug&1) document.getElementById("textcb1").innerHTML = "Send HTTP values";
+	tfo.xh = new XMLHttpRequest();
+	tfo.xh.open("GET", "/value", true);  // send new request
+    tfo.xh.send(null);
+	tfo.http_get_values();
+    }, // send_http_request
+  
+  end_http_request_mlxinit : function() {
+    if (tfo.debug&1) document.getElementById("textcb1").innerHTML = "Send HTTP values";
+	tfo.xh = new XMLHttpRequest();
+	tfo.xh.open("GET", "/mlxinit", true);  // send new request
+    tfo.xh.send(null);
+	tfo.http_get_values();
+    }, // send_http_request
+	
   time_out : function() {
     if (tfo.debug&1)document.getElementById("textcb").innerHTML = "timeout";
 	}, // time_out
 	
   time_interval : function() {
     tfo.timer_count++;	
-	if (tfo.debug&1)document.getElementById("textcb").innerHTML = "interval "+tfo.timer_count; 
+	if (tfo.debug&1)document.getElementById("textcb").innerHTML = "interval: "+tfo.timer_count+" received: "+tfo.receive_count; 
 	tfo.send_http_request();
 	}, // time_interval
 	
@@ -374,8 +422,9 @@
 		  document.getElementById('button17').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "transparency+";tfo.opaque-- ;if(tfo.opaque<0)tfo.opaque=0;tfo.drawframe();});
 		  document.getElementById('button18').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "transparency-";tfo.opaque++;if(tfo.opaque>10)tfo.opaque=10;tfo.drawframe();});
 	      document.getElementById('button19').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "Default";tfo.tempmin = tfo.tempmin_init; tfo.tempmax = tfo.tempmax_init; tfo.zoom = tfo.zoom_init;tfo.drawcanvas();});
-		  document.getElementById('button20').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "show data";if (tfo.debug & 2) tfo.debug &=0xFD; else tfo.debug |=2;document.getElementById("textcb5").innerHTML = ""; });
-
+		  document.getElementById('button20').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "show data";if (tfo.debug & 2) tfo.debug &=0xFD; else tfo.debug |=2;document.getElementById("textcb5").innerHTML = "";document.getElementById("textcb2").innerHTML = "";document.getElementById("textcb3").innerHTML = ""; });
+          document.getElementById('button21').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "HTTP Request values";tfo.send_http_request_values();});
+		  document.getElementById('button22').addEventListener('click', function() {document.getElementById("textcb1").innerHTML = "HTTP Request MLXinit";tfo.send_http_request_mlxinit();});
     	tfo.init();
 	}, false);
 
@@ -393,42 +442,15 @@
     tfo.canvas.onmouseup = function(){ active = false; document.getElementById("textcb2").innerHTML = "x "+x+" y "+y;}
  
 </script>
+  
+  
+  
   <label id="label1" ></label>
   <br> 
-  <div id="controls1" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; width: 1000px; background-color: rgb(238, 238, 238);">
-    <button id="button1" >Start</button>
-    <button id="button2" >Stop</button> 
-	<button id="button6">get stream</button>
-	<button id="button7" >  mintemp - </button>
-	<input type="number" id="mintemp" style="width: 60px;" onchange="tfo.set_mintemp(this.value)">
-    <button id="button8" >  mintemp + </button>
-    <button id="button9" >  maxtemp - </button>
-	<input type="number" id="maxtemp" style="width: 60px;" onchange="tfo.set_maxtemp(this.value)">
-    <button id="button10" >  maxtemp + </button>
-    <button id="button17" > transparency+ </button>
-    <button id="button18" > transparency- </button>
-	 <button id="button5" >Test Camera</button>
-  </div>
-  <div id="controls" style="display: block; border: 1px solid rgb(68, 68, 68); padding: 5px; margin: 5px; width: 1000px; background-color: rgb(238, 238, 238);">
-    <label>Period (ms):</label>
-    <input type="number" id="refresh-rate" style="width: 60px;" onchange="tfo.set_time(this.value)">
-	<button id="button13" style="width: 50px;"> left </button>
-	<label>x:</label>
-	<input type="number" id="xpos" style="width: 60px;" onchange="tfo.set_xpos(this.value)">
-    <button id="button14" style="width: 50px;"> right </button>
-	<button id="button15" style="width: 50px;"> up </button>
-	<label>y:</label>
-	<input type="number" id="ypos" style="width: 60px;" onchange="tfo.set_ypos(this.value)">
-    <button id="button16" style="width: 50px;"> down </button>
-	<button id="button11" >  zoom - </button>
-	<label>zoom:</label>
-	<input type="number" id="zoom" style="width: 60px;" onchange="tfo.set_zoom(this.value)">
-    <button id="button12" >  zoom + </button>
-	<label>move Video</label>
-	<input type="number" id="videoypos" style="width: 60px;" onchange="tfo.set_videoypos(this.value)">
-  </div>
   <button id="button19" > Default </button>
   <button id="button4" >HTTP Request</button>
+  <button id="button21" >get values</button>
+  <button id="button22" >MLX init</button>
   <button id="snap" >Snap Photo</button>
   <button id="button3" >Timeout</button>
   <button id="button20" > show data </button>
