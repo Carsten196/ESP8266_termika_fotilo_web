@@ -39,12 +39,12 @@
 #define LEDoff digitalWrite(LED, HIGH)
 #define MLX_voltage analogRead(A0)
 
-const char* ssid2 = "******";
-const char* password2 = "******";
-const char* ssid3 = "******";
-const char* password3 = "******";
-const char* ssid = "******";
-const char* password = "******";
+const char* ssid2 = "********";
+const char* password2 = "********";
+const char* ssid3 = "********";
+const char* password3 = "********";
+const char* ssid = "********";
+const char* password = "********";
 const char* host = "esp8266fs";
 const char * ssid_ap      = "ESP_HTML_02";
 const char * password_ap  = "";    // alternativ :  = "12345678";
@@ -59,7 +59,8 @@ IPAddress subnet(255, 255, 255, 0);
 int Aufruf_Zaehler = 0;
 int Sent_Zaehler = 0;
 String tempstring;
-byte keyval,mlxstatus;
+byte keyval,mlxstatus,debug;
+unsigned long time1,time2,time3,time4,time5;
 IPAddress myIP;
 
 Adafruit_SSD1306 oled(255);
@@ -241,12 +242,7 @@ void setup(void){
  
   DBG_OUTPUT_PORT.println("");
   DBG_OUTPUT_PORT.print("Connected! IP address: ");
-  myIP = 
   DBG_OUTPUT_PORT.println(myIP);
-  oled.clearDisplay();
-  oled.setCursor(0, 0);
-  oled.print(myIP);
-  oled.display();
 
   MDNS.begin(host);
   DBG_OUTPUT_PORT.print("Open http://");
@@ -268,66 +264,98 @@ void setup(void){
   //first callback is called after the request has ended with all parsed arguments
   //second callback handles file uploads at that location
   server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
-
+  server.on("/debug1", HTTP_GET, [](){server.send(200, "text/plain", "debug on");debug=1;});
+  server.on("/debug0", HTTP_GET, [](){server.send(200, "text/plain", "debug off");debug=0;});
+  server.on("/reset", HTTP_GET, [](){server.send(200, "text/plain", "reset");ESP.restart();});
   //called when the url is not defined here
   //use it to load content from SPIFFS
   server.onNotFound([](){
     if(!handleFileRead(server.uri()))
       server.send(404, "text/plain", "FileNotFound");
   });
-
+  server.on("/mlxinit", HTTP_GET, [](){server.send(200, "text/plain", "mlxinit");MLX_init();});
   //get heap status, analog input value and all GPIO statuses in one json call
-  server.on("/all", HTTP_GET, [](){
+  server.on("/value", HTTP_GET, [](){ 
     String json = "{";
     json += "\"heap\":"+String(ESP.getFreeHeap());
-    json += ", \"analog\":"+String(MLX_voltage);
+    json += ", \"analog\":"+String(analogRead(A0));
     json += ", \"gpio\":"+String((uint32_t)(((GPI | GPO) & 0xFFFF) | ((GP16I & 0x01) << 16)));
-    json += ", \"thfo\":"+tempstring;
     json += "}";
     server.send(200, "text/json", json);
-    json = String();
+    json = String();  
   });
+  
+  server.on("/all", HTTP_GET, [](){
+    LEDon;
+    time2=millis();
+    server.send(200, "text/json", tempstring);
+    Sent_Zaehler++;
+    if (!(keyval&1) || debug) {
+    DBG_OUTPUT_PORT.print("Server sent: ");
+    DBG_OUTPUT_PORT.println(Sent_Zaehler);
+    DBG_OUTPUT_PORT.println(tempstring);
+    }
+    if (mlxstatus) GetTempField();
+    time3=millis()-time2;
+    LEDoff;
+  });
+  
   server.begin();
   DBG_OUTPUT_PORT.println("HTTP server started");
   oled.print("Init MLX...");
   mlxstatus = 1;
-  timeout = 0;
-  while (!MLXtemp.init())  {      // MLX90621 init failed
-    delay (100);
-    if(timeout++ >100)  {oled.println("fail"); mlxstatus = 0; break;}
-  }
-  delay (100);
+  mlxstatus = MLX_init();
   oled.clearDisplay();
   oled.setCursor(0, 0);
   oled.print(myIP);
-  oled.println(Sent_Zaehler++);
+  if(mlxstatus) {
+    oled.println("  MLX");
+    GetAmbientTemp(); 
+    GetTempField();   
+  }
+  else GetdummyData();  
   oled.display();
+  delay (1000);  
   LEDoff;
 }
  
 void loop(void){
+  time1=millis();
   keyval = digitalRead(key1);
   pinMode(LED, INPUT);     // Initialize the LED_BUILTIN pin as an output
   keyval |= digitalRead(key2) << 1;
   pinMode(LED, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
-  LEDon;
-  if (mlxstatus) {
-    GetAmbientTemp();
-    GetTempField();
-  }
-  else GetdummyData();
   server.handleClient();
-  
-  oled.display();
-  LEDoff;
-  yield();
+  //yield();
+  // ab hier nur für debugging
+  if (!(keyval&1) || debug) {
+    oled.clearDisplay();
+    oled.setCursor(0, 0);
+    oled.print(myIP);
+    if(mlxstatus) {
+      oled.println("  MLX");
+      GetAmbientTemp();         
+    }
+    oled.print(Sent_Zaehler); 
+    oled.print(" Time: ");
+    oled.print(millis()-time1);
+    oled.print(" ");
+    oled.println(time3);
+    oled.display(); 
+    DBG_OUTPUT_PORT.print("time: ");
+    DBG_OUTPUT_PORT.print(millis()-time1);
+    DBG_OUTPUT_PORT.print(" ");
+    DBG_OUTPUT_PORT.println(time3);
+    }
 }
 
 void GetAmbientTemp(void)
 {
   float t = MLXtemp.get_ptat();
   oled.print("Temp: ");
-  oled.println(String(t,2));
+  oled.print(String(t,2));
+  oled.print("   U:");
+  oled.println(MLX_voltage);
   /*
   char puffer[10];
   TFTscreen.stroke (0, 0, 0);
@@ -343,53 +371,64 @@ void GetAmbientTemp(void)
   */
 }
 
+uint8_t MLX_init(void) {
+   uint8_t timeout = 0;
+   while (!MLXtemp.init())  {      // MLX90621 init failed
+    delay (100);
+    if(timeout++ >100)  {oled.println("fail"); DBG_OUTPUT_PORT.println("fail");return 0;}
+  }
+  return 1;
+}
+
 void GetTempField(void) {
   float temps[16][4];
   uint8_t x, y;
   MLXtemp.read_all_irfield (temps);
-  tempstring =  "[" ;
+  tempstring =  "{\"thfo\":[" ;
     for (y = 0; y < 4; y++) for (x = 0; x < 16; x++) {
       tempstring += String((int16_t)(temps[x][y]*10)) + ",";
-      //tempstring += String(temps[x][y],1) + ",";
     }
-  tempstring += "0]"; 
-  oled.clearDisplay();
-
+  tempstring += "0]}"; 
+  if (!(keyval&1) || debug) {
+  DBG_OUTPUT_PORT.println(tempstring);
   for (x = 0; x < 4; x++) {
-  oled.setCursor(0, x*8);
+  oled.setCursor(0, (x+2)*8);
   oled.print(String(temps[0][x],1));
-  oled.setCursor(32, x*8);
+  oled.setCursor(32, (x+2)*8);
   oled.print(String(temps[1][x],1));
-  oled.setCursor(64, x*8);
+  oled.setCursor(64, (x+2)*8);
   oled.print(String(temps[2][x],1));
-  oled.setCursor(96, x*8);
+  oled.setCursor(96, (x+2)*8);
   oled.print(String(temps[3][x],1));
   }
-  oled.display();
+  oled.println();
+  oled.display(); 
+  }
 }
 
 
 void GetdummyData(void) {
   float temps[16] = {23.58,47.83,95.34,156.53,-12.58,-2.56,56.84,-23.56,28.89,67.88,212.32,87.45,109.45,-32.56,25.56,63.45};
   uint8_t x, y;
-  tempstring =  "[" ;
+  tempstring =  "{\"thfo\":[" ;
     for (y = 0; y < 4; y++) for (x = 0; x < 16; x++) {
       tempstring += String((int16_t)(temps[random(0,15)]*10)) + ",";
-      //tempstring += String(temps[random(0,15)],1) + ",";
     }
-  tempstring += "0]"; 
-  oled.clearDisplay();
+   tempstring += "0]}"; 
+  if (!(keyval&1) || debug) {
+  DBG_OUTPUT_PORT.println(tempstring);
   for (x = 0; x < 4; x++) {
-  oled.setCursor(0, x*8);
+  oled.setCursor(0, (x+2)*8);
   oled.print(String(temps[0+x*4],1));
-  oled.setCursor(32, x*8);
+  oled.setCursor(32, (x+2)*8);
   oled.print(String(temps[1+x*4],1));
-  oled.setCursor(64, x*8);
+  oled.setCursor(64, (x+2)*8);
   oled.print(String(temps[2+x*4],1));
-  oled.setCursor(96, x*8);
-  oled.print(String(temps[3+x*4],1));
+  oled.setCursor(96, (x+2)*8);
+  oled.print(String(temps[3+x*4],1)); 
   }
-  oled.display();
+  oled.println();
+  }
 }
 
 uint8_t wifi_waitconnect (void) {
