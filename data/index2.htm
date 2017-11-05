@@ -20,18 +20,25 @@
 <head>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8">
   <title>ESP Monitor</title>
+  <label id="label1" ></label><br>
+  <label id="label2" ></label><br>
+  <label id="label3" ></label><br>
   <script type="text/javascript" src="graphs.js"></script>
   <script type="text/javascript">
     var heap,temp,digi;
     var reloadPeriod = 1000;
     var running = false;
-    
+    var count = 0;
     function loadValues(){
       if(!running) return;
       var xh = new XMLHttpRequest();
       xh.onreadystatechange = function(){
         if (xh.readyState == 4){
           if(xh.status == 200) {
+		    count++;
+			document.getElementById("label2").innerHTML = "Header "+xh.getAllResponseHeaders();
+	        document.getElementById("label3").innerHTML = "Text "+xh.responseText;
+		    document.getElementById("label1").innerHTML = "new Values: " +count;
             var res = JSON.parse(xh.responseText);
             heap.add(res.heap);
             temp.add(res.analog);
@@ -40,7 +47,7 @@
           } else running = false;
         }
       };
-      xh.open("GET", "/all", true);
+      xh.open("GET", "/value", true);
       xh.send(null);
     };
     
