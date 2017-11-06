@@ -9,6 +9,8 @@ But it will not work completely on iPhone devices, cause ther is no support for 
 (IOS 11 should support camera access but does not so far, maybe one of the next updates)
 It supports three different Webservers with DHCP and fixed IPs, on connection fail is will a be a webserver itself.
 
+<img src=/data/IMG_2164.JPG></img>
+
 The only parts you need are:
 - Wemos D1 mini ($2,50 on Alibaba)
 - Diode 1N4148 (less than 5 cents, to reduce sensor voltage)
@@ -24,6 +26,8 @@ connect the unmarked side of 1N4148 to 3,3V and the marked side to sensor power 
 optional connect Zener Diode in series with resistor marked side to sensor power supply, the other side to G,
 optional connect A0 to sensoe power supply, too for Voltage measurement,
 optional connect the OLED to 5V, G, D1 and D2.
+
+<img src=/data/IMG_2166.JPG></img>
 
 now edit arduino File and enter SSID and password of your home router.
 compile and upload Arduino File and SPIFFS Data with Arduino IDE.
